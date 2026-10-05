@@ -1,66 +1,12 @@
 (function () {
   'use strict';
 
-  // ===== 临时 mock（搭档模块完成后删除此段） =====
-  // 注意：浏览器原生存在 window.Storage 构造函数，不能直接用 `window.Storage || mock` 判断，
-  // 必须检测具体方法是否存在，否则会误用到原生对象导致 getAllItems 报错。
-  const Storage = (window.Storage && typeof window.Storage.getAllItems === 'function')
-    ? window.Storage
-    : {
-        _items: [],
-        getAllItems() { return this._items; },
-        saveItem(item) { this._items.push(item); return item; },
-        updateItem(id, changes) {
-          const it = this._items.find(i => i.id === id);
-          if (it) Object.assign(it, changes);
-          return it;
-        },
-        getOwnerId() { return 'owner_demo'; }
-      };
-
-  const Validate = (window.Validate && typeof window.Validate.validateItem === 'function')
-    ? window.Validate
-    : {
-        validateItem(d) {
-          const e = {};
-          if (!d.title || !d.title.trim())       e.title = '物品名称不能为空';
-          if (!d.type)                            e.type = '请选择类型';
-          if (!d.location || !d.location.trim())  e.location = '地点不能为空';
-          if (!d.publisher || !d.publisher.trim())e.publisher = '发布者不能为空';
-          if (!d.contact || !d.contact.trim())    e.contact = '联系方式不能为空';
-          return { valid: Object.keys(e).length === 0, errors: e };
-        }
-      };
-
-  const Search = (window.Search && typeof window.Search.filterItems === 'function')
-    ? window.Search
-    : {
-        filterItems(items, f = {}) {
-          const kw = (f.keyword || '').trim().toLowerCase();
-          return items.filter(it => {
-            if (f.type && it.type !== f.type) return false;
-            if (f.category && it.category !== f.category) return false;
-            if (f.status && it.status !== f.status) return false;
-            if (f.ownerId && it.ownerId !== f.ownerId) return false;
-            if (kw) {
-              const s = [it.title, it.description, it.location].filter(Boolean).join(' ').toLowerCase();
-              if (!s.includes(kw)) return false;
-            }
-            return true;
-          }).sort((a, b) => b.createdAt - a.createdAt);
-        }
-      };
-
-  const Status = (window.Status && typeof window.Status.getStatusText === 'function')
-    ? window.Status
-    : {
-        getStatusText(it) {
-          return it.status === 'resolved'
-            ? (it.type === 'lost' ? '已找到' : '已归还')
-            : '进行中';
-        },
-        getTypeText(t) { return t === 'lost' ? '寻物' : '招领'; }
-      };
+  // 依赖逻辑层模块：storage / validate / search / status
+  // 这四个模块在 index.html 中先于 app.js 加载，并挂载到 window 上。
+  const Storage = window.Storage;
+  const Validate = window.Validate;
+  const Search = window.Search;
+  const Status = window.Status;
 
   // ===== 状态 =====
   const state = {
